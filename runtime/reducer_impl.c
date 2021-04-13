@@ -4,6 +4,7 @@
 #endif
 #include "reducer_impl.h"
 #include "cilk/hyperobject_base.h"
+#include "cilk/sentinel.h"
 #include "global.h"
 #include "init.h"
 #include "internal-malloc.h"
@@ -194,7 +195,7 @@ CHEETAH_INTERNAL void reducers_import(global_state *g, __cilkrts_worker *w) {
 // managing hyperobjects
 // =================================================================
 
-static cilkred_map *install_new_reducer_map(__cilkrts_worker *w) {
+cilkred_map *install_new_reducer_map(__cilkrts_worker *w) {
     global_state *g = w->g;
     reducer_id_manager *m = g->id_manager;
     cilkred_map *h;
@@ -299,7 +300,38 @@ void __cilkrts_hyper_create(__cilkrts_hyperobject_base *key) {
                   "hyperobject base is too large");
 }
 
-void *__cilkrts_hyper_lookup(__cilkrts_hyperobject_base *key) {
+void inline_cilkrts_bug(__cilkrts_worker *w, char *s) {
+    cilkrts_bug(w, s);
+}
+
+void inline_promote_own_deque(__cilkrts_worker *w) {
+    CILK_ASSERT(w, w->g->nworkers == 1);
+    promote_own_deque(w);
+}
+
+void hyperlookup_slowpath(__cilkrts_hyperobject_base *key,
+                          __cilkrts_worker *w,
+                          cilkred_map *h,
+                          ViewInfo *vinfo,
+                          hyper_id_t id) {
+    CILK_ASSERT(w, id < h->spa_cap);
+    vinfo = &h->vinfo[id];
+    CILK_ASSERT(w, vinfo->key == NULL && vinfo->val == NULL);
+
+    void *val = key->__c_monoid.allocate_fn(key, key->__view_size);
+    key->__c_monoid.identity_fn(key, val);
+
+    // allocate space for the val and initialize it to identity
+    vinfo->key = key;
+    vinfo->val = val;
+    cilkred_map_log_id(w, h, id);
+}
+
+#if !INLINE_FULL_LOOKUP
+#include "hyperlookup.c"
+#endif
+
+void *__cilkrts_hyper_lookup_old(__cilkrts_hyperobject_base *key) {
     __cilkrts_worker *w = __cilkrts_get_tls_worker();
     hyper_id_t id = key->__id_num;
 

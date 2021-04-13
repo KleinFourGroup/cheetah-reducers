@@ -18,6 +18,8 @@
 #include "readydeque.h"
 #include "scheduler.h"
 
+#include "cilk/sentinel.h"
+
 #ifdef ENABLE_CILKRTS_PEDIGREE
 extern __cilkrts_pedigree cilkrts_root_pedigree_node;
 extern uint64_t DPRNG_PRIME;
@@ -36,6 +38,26 @@ uint64_t __cilkrts_get_dprand(void) {
     return __cilkrts_dprng_mix_mod_p(w->current_stack_frame->dprng_dotproduct);
 }
 
+#endif
+
+#if INLINE_FULL_LOOKUP
+#include "cilkred_map.h"
+#include "cilk/hyperobject_base.h"
+
+extern void inline_cilkrts_bug(__cilkrts_worker *w, char *s);
+
+extern void inline_promote_own_deque(__cilkrts_worker *w);
+
+extern cilkred_map *install_new_reducer_map(__cilkrts_worker *w);
+
+extern
+void hyperlookup_slowpath(__cilkrts_hyperobject_base *key,
+                          __cilkrts_worker *w,
+                          cilkred_map *h,
+                          ViewInfo *vinfo,
+                          hyper_id_t id);
+
+#include "hyperlookup.c"
 #endif
 
 // Begin a Cilkified region.  The routine runs on a Cilkifying thread to

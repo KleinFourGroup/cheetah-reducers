@@ -5,6 +5,7 @@ set(cilk_header_files
   cilk/holder.h
   cilk/hyperobject_base.h
   cilk/metaprogramming.h
+  cilk/sentinel.h
   cilk/reducer.h
   cilk/reducer_file.h
   cilk/reducer_list.h

@@ -1859,6 +1859,10 @@ using stub::reducer;
     (*(_Typeof((Expr).value) *)__cilkrts_hyper_lookup(                         \
         &(Expr).__cilkrts_hyperbase))
 
+#define REDUCER_VIEW_OLD(Expr)                                                     \
+    (*(_Typeof((Expr).value) *)__cilkrts_hyper_lookup_old(                         \
+        &(Expr).__cilkrts_hyperbase))
+
 //@} C language reducer macros
 
 #undef __CILKRTS_STRAND_STALE
