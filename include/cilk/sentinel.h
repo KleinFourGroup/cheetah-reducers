@@ -6,4 +6,5 @@
 #define INLINE_MAP_LOOKUP 1
 #define SLOWPATH_LOOKUP 1
 #define INLINE_FULL_LOOKUP 1
+#define INLINE_ALL_TLS 1
 #endif

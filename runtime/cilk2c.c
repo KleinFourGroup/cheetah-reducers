@@ -11,6 +11,12 @@
 #include "readydeque.h"
 #include "scheduler.h"
 
+#include "cilk/sentinel.h"
+
+#if INLINE_ALL_TLS
+extern __thread __cilkrts_worker *tls_worker;
+#endif
+
 extern void _Unwind_Resume(struct _Unwind_Exception *);
 extern _Unwind_Reason_Code _Unwind_RaiseException(struct _Unwind_Exception *);
 
@@ -23,7 +29,11 @@ CHEETAH_INTERNAL struct cilkrts_callbacks cilkrts_callbacks = {
 //
 // TODO: Figure out how we want to support worker-local storage.
 unsigned __cilkrts_get_worker_number(void) {
+#if INLINE_ALL_TLS
+    __cilkrts_worker *w = tls_worker;
+#else
     __cilkrts_worker *w = __cilkrts_get_tls_worker();
+#endif
     if (w)
         return w->self;
     // Use the last exiting worker from default_cilkrts instead

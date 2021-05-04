@@ -20,6 +20,10 @@
 
 #include "cilk/sentinel.h"
 
+#if INLINE_ALL_TLS
+extern __thread __cilkrts_worker *tls_worker;
+#endif
+
 #ifdef ENABLE_CILKRTS_PEDIGREE
 extern __cilkrts_pedigree cilkrts_root_pedigree_node;
 extern uint64_t DPRNG_PRIME;
@@ -33,7 +37,11 @@ uint64_t __cilkrts_dprng_sum_mod_p(uint64_t a, uint64_t b);
 void __cilkrts_init_dprng(void);
 
 uint64_t __cilkrts_get_dprand(void) {
+#if INLINE_ALL_TLS
+    __cilkrts_worker *w = tls_worker;
+#else
     __cilkrts_worker *w = __cilkrts_get_tls_worker();
+#endif
     __cilkrts_bump_worker_rank();
     return __cilkrts_dprng_mix_mod_p(w->current_stack_frame->dprng_dotproduct);
 }
@@ -111,7 +119,11 @@ uncilkify(global_state *g, __cilkrts_stack_frame *sf) {
 
 #ifdef ENABLE_CILKRTS_PEDIGREE
 __attribute__((always_inline)) __cilkrts_pedigree __cilkrts_get_pedigree(void) {
+#if INLINE_ALL_TLS
+    __cilkrts_worker *w = tls_worker;
+#else
     __cilkrts_worker *w = __cilkrts_get_tls_worker();
+#endif
     if (w == NULL) {
         return cilkrts_root_pedigree_node;
     } else {
@@ -123,7 +135,11 @@ __attribute__((always_inline)) __cilkrts_pedigree __cilkrts_get_pedigree(void) {
 }
 
 __attribute__((always_inline)) void __cilkrts_bump_worker_rank(void) {
+#if INLINE_ALL_TLS
+    __cilkrts_worker *w = tls_worker;
+#else
     __cilkrts_worker *w = __cilkrts_get_tls_worker();
+#endif
     if (w == NULL) {
         cilkrts_root_pedigree_node.rank++;
     } else {
@@ -139,11 +155,19 @@ __attribute__((always_inline)) void __cilkrts_bump_worker_rank(void) {
 // function must be inlined for correctness.
 __attribute__((always_inline)) void
 __cilkrts_enter_frame(__cilkrts_stack_frame *sf) {
+#if INLINE_ALL_TLS
+    __cilkrts_worker *w = tls_worker;
+#else
     __cilkrts_worker *w = __cilkrts_get_tls_worker();
+#endif
     sf->flags = 0;
     if (NULL == w) {
         cilkify(default_cilkrts, sf);
+#if INLINE_ALL_TLS
+        w = tls_worker;
+#else
         w = __cilkrts_get_tls_worker();
+#endif
     }
     cilkrts_alert(CFRAME, w, "__cilkrts_enter_frame %p", (void *)sf);
 
@@ -179,7 +203,11 @@ __cilkrts_enter_frame(__cilkrts_stack_frame *sf) {
 // its counterpart, __cilkrts_enter_frame.
 __attribute__((always_inline)) void
 __cilkrts_enter_frame_fast(__cilkrts_stack_frame *sf) {
+#if INLINE_ALL_TLS
+    __cilkrts_worker *w = tls_worker;
+#else
     __cilkrts_worker *w = __cilkrts_get_tls_worker();
+#endif
     cilkrts_alert(CFRAME, w, "__cilkrts_enter_frame_fast %p", (void *)sf);
 
     sf->flags = 0;

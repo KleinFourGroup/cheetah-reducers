@@ -1,6 +1,6 @@
 #include "cilk/sentinel.h"
 
-#if INLINE_TLS
+#if INLINE_TLS && !INLINE_ALL_TLS
 extern __thread __cilkrts_worker *tls_worker;
 #endif
 
@@ -20,7 +20,7 @@ void *__cilkrts_hyper_lookup(__cilkrts_hyperobject_base *key) {
     }
     id &= ~HYPER_ID_VALID;
 
-    if (__builtin_expect(!w, 0)) {
+    if (!w) {
         return (char *)key + key->__view_offset;
     }
 

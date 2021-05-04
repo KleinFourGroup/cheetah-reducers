@@ -23,6 +23,10 @@
 #define REDUCER_LIMIT 1024U
 #define GLOBAL_REDUCER_LIMIT 100U
 
+#if INLINE_ALL_TLS
+extern __thread __cilkrts_worker *tls_worker;
+#endif
+
 // =================================================================
 // ID managers for reducers
 // =================================================================
@@ -212,7 +216,12 @@ cilkred_map *install_new_reducer_map(__cilkrts_worker *w) {
    undefined. */
 void __cilkrts_hyper_destroy(__cilkrts_hyperobject_base *key) {
 
+#if INLINE_ALL_TLS
+    __cilkrts_worker *w = tls_worker;
+#else
     __cilkrts_worker *w = __cilkrts_get_tls_worker();
+#endif
+
     // If we don't have a worker, use instead the last exiting worker from the
     // default CilkRTS.
     if (!w)
@@ -248,7 +257,11 @@ void __cilkrts_hyper_create(__cilkrts_hyperobject_base *key) {
     // This function registers the specified hyperobject in the current
     // reducer map and registers the initial value of the hyperobject as the
     // leftmost view of the reducer.
+#if INLINE_ALL_TLS
+    __cilkrts_worker *w = tls_worker;
+#else
     __cilkrts_worker *w = __cilkrts_get_tls_worker();
+#endif
     reducer_id_manager *m = NULL;
 
     if (__builtin_expect(!w, 0)) {
@@ -381,8 +394,11 @@ void *__cilkrts_hyper_lookup_old(__cilkrts_hyperobject_base *key) {
 
 void *__cilkrts_hyper_alloc(__cilkrts_hyperobject_base *key, size_t bytes) {
     if (USE_INTERNAL_MALLOC) {
+#if INLINE_ALL_TLS
+        __cilkrts_worker *w = tls_worker;
+#else
         __cilkrts_worker *w = __cilkrts_get_tls_worker();
-        if (!w)
+#endif        if (!w)
             // Use instead the worker from the default CilkRTS that last exited
             // a Cilkified region
             w = default_cilkrts->workers[default_cilkrts->exiting_worker];
@@ -393,8 +409,11 @@ void *__cilkrts_hyper_alloc(__cilkrts_hyperobject_base *key, size_t bytes) {
 
 void __cilkrts_hyper_dealloc(__cilkrts_hyperobject_base *key, void *view) {
     if (USE_INTERNAL_MALLOC) {
+#if INLINE_ALL_TLS
+        __cilkrts_worker *w = tls_worker;
+#else
         __cilkrts_worker *w = __cilkrts_get_tls_worker();
-        if (!w)
+#endif        if (!w)
             // Use instead the worker from the default CilkRTS that last exited
             // a Cilkified region
             w = default_cilkrts->workers[default_cilkrts->exiting_worker];

@@ -10,6 +10,12 @@
 #include "closure.h"
 #include "readydeque.h"
 
+#include "cilk/sentinel.h"
+
+#if INLINE_ALL_TLS
+extern __thread __cilkrts_worker *tls_worker;
+#endif
+
 typedef _Unwind_Reason_Code (*__personality_routine)(
     int version, _Unwind_Action actions, uint64_t exception_class,
     struct _Unwind_Exception *exception_object,
@@ -43,7 +49,11 @@ _Unwind_Reason_Code __cilk_personality_internal(
     _Unwind_Action actions, uint64_t exception_class,
     struct _Unwind_Exception *ue_header, struct _Unwind_Context *context) {
 
+#if INLINE_ALL_TLS
+    __cilkrts_worker *w = tls_worker;
+#else
     __cilkrts_worker *w = __cilkrts_get_tls_worker();
+#endif
     __cilkrts_stack_frame *sf = w->current_stack_frame;
 
     if (actions & _UA_SEARCH_PHASE) {
@@ -86,7 +96,11 @@ _Unwind_Reason_Code __cilk_personality_internal(
         }
 
         // after longjmping back, the worker may have changed.
+#if INLINE_ALL_TLS
+        w = tls_worker;
+#else
         w = __cilkrts_get_tls_worker();
+#endif
         deque_lock_self(w);
         Closure *t = deque_peek_bottom(w, w->self);
         deque_unlock_self(w);
