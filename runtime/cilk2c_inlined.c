@@ -58,14 +58,17 @@ extern void inline_promote_own_deque(__cilkrts_worker *w);
 
 extern cilkred_map *install_new_reducer_map(__cilkrts_worker *w);
 
+#if HASH_REDUCER
+// Maybe nothing?
+#else
 extern
 void hyperlookup_slowpath(__cilkrts_hyperobject_base *key,
                           __cilkrts_worker *w,
                           cilkred_map *h,
                           ViewInfo *vinfo,
                           hyper_id_t id);
-
-#include "hyperlookup.c"
+#endif
+#include "reducer/hyperlookup.c"
 #endif
 
 // Begin a Cilkified region.  The routine runs on a Cilkifying thread to

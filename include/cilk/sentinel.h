@@ -1,6 +1,7 @@
 #ifndef _SENTINEL_TESTS_H
 #define _SENTINEL_TESTS_H
-#define PEER_PURE 1
+#define HASH_REDUCER 1
+#define PEER_PURE 0
 #define PRUNE_BRANCHES 0
 #define INLINE_TLS 1
 #define INLINE_MAP_LOOKUP 1

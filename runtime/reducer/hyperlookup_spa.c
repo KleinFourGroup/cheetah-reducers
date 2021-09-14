@@ -1,5 +1,3 @@
-#include "cilk/sentinel.h"
-
 #if INLINE_TLS && !INLINE_ALL_TLS
 extern __thread __cilkrts_worker *tls_worker;
 #endif
