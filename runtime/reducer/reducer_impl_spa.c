@@ -322,13 +322,12 @@ void inline_promote_own_deque(__cilkrts_worker *w) {
     promote_own_deque(w);
 }
 
-void hyperlookup_slowpath(__cilkrts_hyperobject_base *key,
+ViewInfo * hyperlookup_slowpath(__cilkrts_hyperobject_base *key,
                           __cilkrts_worker *w,
                           cilkred_map *h,
-                          ViewInfo *vinfo,
                           hyper_id_t id) {
     CILK_ASSERT(w, id < h->spa_cap);
-    vinfo = &h->vinfo[id];
+    ViewInfo * vinfo = &h->vinfo[id];
     CILK_ASSERT(w, vinfo->key == NULL && vinfo->val == NULL);
 
     void *val = key->__c_monoid.allocate_fn(key, key->__view_size);
@@ -338,6 +337,7 @@ void hyperlookup_slowpath(__cilkrts_hyperobject_base *key,
     vinfo->key = key;
     vinfo->val = val;
     cilkred_map_log_id(w, h, id);
+    return vinfo;
 }
 
 #if !INLINE_FULL_LOOKUP

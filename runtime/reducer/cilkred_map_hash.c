@@ -412,16 +412,12 @@ __cilkrts_worker* cilkred_map_merge(cilkred_map * this_map,
                     /* Stealing should be disabled during reduce
                        (even if force-reduce is enabled). */
 
-                    {			
-                    CILK_ASSERT(w, current_sf->worker == w);
-                    CILK_ASSERT(w, w->current_stack_frame == current_sf);
-
+                    {
                     /* TBD: if reduce throws an exception we need to stop it
                     here. */
                     hb->__c_monoid.reduce_fn((void*)hb,
                                 this_el->view,
                                 other_el->view);
-                    w = current_sf->worker;
                     }
 
                   } break;

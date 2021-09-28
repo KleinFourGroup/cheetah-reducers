@@ -56,9 +56,7 @@ void *__cilkrts_hyper_lookup(__cilkrts_hyperobject_base *key) {
         inline_cilkrts_bug(w, "Error: illegal reducer ID (exceeds SPA cap)");
     } else {
         vinfo = h->vinfo + id;
-        if (vinfo->key == NULL) {
-        //if (vinfo->key == NULL && vinfo->val == NULL) {
-            CILK_ASSERT(w, vinfo->val == NULL);
+        if (vinfo->key == NULL && vinfo->val == NULL) {
             vinfo = NULL;
         }
     }
@@ -66,7 +64,7 @@ void *__cilkrts_hyper_lookup(__cilkrts_hyperobject_base *key) {
 
     if (vinfo == NULL) {
 #if SLOWPATH_LOOKUP || INLINE_FULL_LOOKUP
-        hyperlookup_slowpath(key, w, h, vinfo, id);
+        vinfo = hyperlookup_slowpath(key, w, h, id);
 #else
         CILK_ASSERT(w, id < h->spa_cap);
         vinfo = &h->vinfo[id];

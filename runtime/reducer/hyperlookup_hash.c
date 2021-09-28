@@ -52,8 +52,8 @@ void* __cilkrts_hyper_lookup(__cilkrts_hyperobject_base *hb)
                 break;
             }
         }
+        if (! el->key) el = 0;
     }
-    if (! el->key) el = 0;
 #endif
 
     if (! el) {

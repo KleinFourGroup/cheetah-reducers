@@ -62,10 +62,9 @@ extern cilkred_map *install_new_reducer_map(__cilkrts_worker *w);
 // Maybe nothing?
 #else
 extern
-void hyperlookup_slowpath(__cilkrts_hyperobject_base *key,
+ViewInfo * hyperlookup_slowpath(__cilkrts_hyperobject_base *key,
                           __cilkrts_worker *w,
                           cilkred_map *h,
-                          ViewInfo *vinfo,
                           hyper_id_t id);
 #endif
 #include "reducer/hyperlookup.c"
