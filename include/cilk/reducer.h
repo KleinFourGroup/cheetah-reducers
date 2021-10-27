@@ -1863,6 +1863,30 @@ using stub::reducer;
     (*(_Typeof((Expr).value) *)__cilkrts_hyper_lookup_old(                         \
         &(Expr).__cilkrts_hyperbase))
 
+
+#if COMM_REDUCER && ! HASH_REDUCER
+
+#define CILK_C_INIT_COM_REDUCER(Type, Reduce, Identity, Destroy)               \
+    {                                                                          \
+        {{Reduce, Identity, Destroy, __cilkrts_hyper_alloc,                    \
+          __cilkrts_hyper_dealloc},                                            \
+         0,                                                                    \
+         64, /* This is the __view_offset, and it's not relevant here */       \
+         sizeof(Type)}                                                         \
+    }
+
+#define CILK_C_REGISTER_COM_REDUCER(Expr)                                      \
+    __cilkrts_hyper_create_com(&(Expr).__cilkrts_hyperbase)
+
+#define COM_REDUCER_VIEW(Expr)                                                 \
+    (*(_Typeof((Expr).value) *)__cilkrts_hyper_lookup_com(                     \
+        &(Expr).__cilkrts_hyperbase))
+
+#define COM_REDUCER_MERGE(Expr) \
+    __cilkrts_hyper_merge_com(&(Expr).__cilkrts_hyperbase)
+
+#endif
+
 //@} C language reducer macros
 
 #undef __CILKRTS_STRAND_STALE

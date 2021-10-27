@@ -477,3 +477,142 @@ cilkred_map *__cilkrts_internal_merge_two_rmaps(__cilkrts_worker *const ws,
         return right;
     }
 }
+
+#if COMM_REDUCER
+static com_cilkred_map *install_new_com_reducer_map(__cilkrts_worker *w) {
+    global_state *g = w->g;
+    reducer_id_manager *m = g->id_manager;
+    com_cilkred_map *h = com_cilkred_map_make_map(w, m->spa_cap);
+    w->com_reducer_map = h;
+    return h;
+}
+
+void __cilkrts_hyper_create_com(__cilkrts_hyperobject_base *key) {
+    __cilkrts_worker *w = __cilkrts_get_tls_worker();
+    reducer_id_manager *m = NULL;
+
+    // TODO(qq): handle the below case, which I don't currently understand
+    if (__builtin_expect(!w, 0)) {
+        // Copied from __cilkrts_hyper_create
+        m = default_cilkrts->id_manager;
+        w = default_cilkrts->workers[default_cilkrts->exiting_worker];
+        //CILK_ABORT(w, "No worker upon commutative reducer creation");
+    } else {
+        // Share a reducer id manager with associative reducers for now, for simplicity
+        m = w->g->id_manager;
+    }
+
+    hyper_id_t id = reducer_id_get(m, w);
+    key->__id_num = id | HYPER_ID_VALID;
+
+    com_cilkred_map *h = w->com_reducer_map;
+
+    if (__builtin_expect(!h, 0)) {
+        h = install_new_com_reducer_map(w);
+    }
+
+    CILK_ASSERT(w, com_cilkred_map_lookup(h, key) == NULL);
+    CILK_ASSERT(w, w->com_reducer_map == h);
+}
+
+void *__cilkrts_hyper_lookup_com(__cilkrts_hyperobject_base *key) {
+    __cilkrts_worker *w = __cilkrts_get_tls_worker();
+    hyper_id_t id = key->__id_num;
+
+    if (__builtin_expect(!w, 0)) {
+        global_state *g = default_cilkrts;
+        w = g->workers[g->exiting_worker];
+        //CILK_ABORT(w, "No worker upon commutative reducer lookup");
+    }
+
+    if (!__builtin_expect(id & HYPER_ID_VALID, HYPER_ID_VALID)) {
+        cilkrts_bug(w, "User error: reference to unregistered hyperobject");
+    }
+    id &= ~HYPER_ID_VALID;
+
+    com_cilkred_map *h = w->com_reducer_map;
+
+    if (__builtin_expect(!h, 0)) {
+        h = install_new_com_reducer_map(w);
+    }
+
+    ViewInfo *vinfo = com_cilkred_map_lookup(h, key);
+    if (vinfo == NULL) {
+        CILK_ASSERT(w, id < h->spa_cap);
+        vinfo = &h->vinfo[id];
+
+        void *val = key->__c_monoid.allocate_fn(key, key->__view_size);
+        key->__c_monoid.identity_fn(key, val);
+        CILK_ASSERT(w, vinfo->key == NULL && vinfo->val == NULL);
+
+        // allocate space for the val and initialize it to identity
+        vinfo->key = key;
+        vinfo->val = val;
+    }
+    return vinfo->val;
+}
+
+static inline void clear_view(ViewInfo *view) {
+    __cilkrts_hyperobject_base *key = view->key;
+
+    if (key != NULL) {
+        cilk_destroy_fn_t destroy = key->__c_monoid.destroy_fn;
+        if (destroy) {
+            key->__c_monoid.destroy_fn(key, view->val); // calls destructor
+        }
+        key->__c_monoid.deallocate_fn(key, view->val); // free the memory
+    }
+    view->key = NULL;
+    view->val = NULL;
+}
+
+void __cilkrts_hyper_merge_com(__cilkrts_hyperobject_base *key) {
+    // Iterate through all workers (done in global state), reduce into current
+    // worker
+    // This is fine given that there should be no parallel control between
+    // merge and access of the merged value
+    __cilkrts_worker *w = __cilkrts_get_tls_worker();
+
+    global_state *g;
+
+    if (__builtin_expect(!w, 0)) {
+        g = default_cilkrts;
+        w = g->workers[g->exiting_worker];
+        //CILK_ABORT(w, "No worker upon commutative reducer merge");
+    } else {
+        g = w->g;
+    }
+
+    worker_id self_id = w->self;
+    com_cilkred_map *map = w->com_reducer_map;
+
+    if (__builtin_expect(!map, 0)) {
+        map = install_new_com_reducer_map(w);
+    }
+
+    hyper_id_t id = key->__id_num;
+    id &= ~HYPER_ID_VALID;
+
+    for (int i = 0; i < g->options.nproc; i++) {
+        if (i == self_id) {
+            continue;
+        }
+        // reduce together
+        __cilkrts_worker *other_w = g->workers[i];
+        if (!other_w->com_reducer_map) {
+            continue;
+        }
+        if (!other_w->com_reducer_map->vinfo[id].val) {
+            continue;
+        }
+        if (!map->vinfo[id].val) {
+            map->vinfo[id].val = other_w->com_reducer_map->vinfo[id].val;
+            continue;
+        }
+        key->__c_monoid.reduce_fn(key, map->vinfo[id].val,
+                                  other_w->com_reducer_map->vinfo[id].val);
+        // TODO(qq): clear view, which is static inline in another file right now
+        clear_view(&other_w->com_reducer_map->vinfo[id]);
+    }
+}
+#endif

@@ -94,4 +94,21 @@ size_t cilkred_map_num_views(cilkred_map *this_map);
 CHEETAH_INTERNAL
 bool cilkred_map_is_leftmost(cilkred_map *this_map);
 
+#if COMM_REDUCER
+
+struct com_cilkred_map {
+    hyper_id_t spa_cap;
+    ViewInfo *vinfo;
+};
+typedef struct com_cilkred_map com_cilkred_map;
+
+CHEETAH_INTERNAL
+ViewInfo *com_cilkred_map_lookup(com_cilkred_map *this_map,
+                                 __cilkrts_hyperobject_base *key);
+
+CHEETAH_INTERNAL
+com_cilkred_map *com_cilkred_map_make_map(__cilkrts_worker *w, size_t size);
+
+#endif
+
 #endif

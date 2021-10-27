@@ -55,7 +55,11 @@ void *__cilkrts_hyper_lookup_old(__cilkrts_hyperobject_base *key);
 void *__cilkrts_hyper_alloc(__cilkrts_hyperobject_base *key, size_t bytes);
 void __cilkrts_hyper_dealloc(__cilkrts_hyperobject_base *key, void *view);
 
-#if COMM_RED
+#if COMM_REDUCER && ! HASH_REDUCER
+
+void __cilkrts_hyper_create_com(__cilkrts_hyperobject_base *key);
+void *__cilkrts_hyper_lookup_com(__cilkrts_hyperobject_base *key);
+void __cilkrts_hyper_merge_com(__cilkrts_hyperobject_base *key);
 
 #endif
 

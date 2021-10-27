@@ -18,6 +18,9 @@ extern "C" {
 #include "sched_stats.h"
 #include "types.h"
 
+// Might be redundant
+#include "cilk/sentinel.h"
+
 struct global_state;
 typedef struct global_state global_state;
 typedef struct local_state local_state;
@@ -222,6 +225,11 @@ struct __cilkrts_worker {
 
     // Map from reducer names to reducer values
     cilkred_map *reducer_map;
+
+#if COMM_REDUCER && ! HASH_REDUCER
+    // Commutative reducer map
+    com_cilkred_map *com_reducer_map;
+#endif
 };
 
 struct cilkrts_callbacks {

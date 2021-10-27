@@ -233,3 +233,38 @@ size_t cilkred_map_num_views(cilkred_map *this_map) {
 
 /** @brief Is the cilkred_map leftmost */
 bool cilkred_map_is_leftmost(cilkred_map *this_map) { return false; }
+
+#if COMM_REDUCER
+
+ViewInfo *com_cilkred_map_lookup(com_cilkred_map *this_map,
+                                 __cilkrts_hyperobject_base *key) {
+    hyper_id_t id = key->__id_num;
+    if (__builtin_expect(!(id & HYPER_ID_VALID), 0)) {
+        return NULL;
+    }
+    id &= ~HYPER_ID_VALID;
+    if (id >= this_map->spa_cap) {
+        return NULL; /* TODO: grow map */
+    }
+    ViewInfo *ret = this_map->vinfo + id;
+    if (ret->key == NULL && ret->val == NULL) {
+        return NULL;
+    }
+
+    return ret;
+}
+
+com_cilkred_map *com_cilkred_map_make_map(__cilkrts_worker *w, size_t size) {
+    CILK_ASSERT_G(w);
+    CILK_ASSERT(w, size > 0 && (hyper_id_t)size == size);
+
+    com_cilkred_map *h = (com_cilkred_map *)malloc(sizeof(*h));
+
+    // MAK: w is not NULL
+    h->spa_cap = size;
+    h->vinfo = (ViewInfo *)calloc(size, sizeof(ViewInfo));
+
+    return h;
+}
+
+#endif
