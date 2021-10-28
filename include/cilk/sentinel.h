@@ -8,4 +8,5 @@
 #define SLOWPATH_LOOKUP 0
 #define INLINE_FULL_LOOKUP 0
 #define INLINE_ALL_TLS 1
+#define COMM_REDUCER 1
 #endif

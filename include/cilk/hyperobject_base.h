@@ -60,6 +60,8 @@ void __cilkrts_hyper_dealloc(__cilkrts_hyperobject_base *key, void *view);
 void __cilkrts_hyper_create_com(__cilkrts_hyperobject_base *key);
 void *__cilkrts_hyper_lookup_com(__cilkrts_hyperobject_base *key);
 void __cilkrts_hyper_merge_com(__cilkrts_hyperobject_base *key);
+void *__cilkrts_hyper_alloc_com(__cilkrts_hyperobject_base *key, size_t bytes);
+void __cilkrts_hyper_dealloc_com(__cilkrts_hyperobject_base *key, void *view);
 
 #endif
 

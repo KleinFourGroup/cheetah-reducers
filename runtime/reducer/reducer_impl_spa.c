@@ -615,4 +615,12 @@ void __cilkrts_hyper_merge_com(__cilkrts_hyperobject_base *key) {
         clear_view(&other_w->com_reducer_map->vinfo[id]);
     }
 }
+
+void *__cilkrts_hyper_alloc_com(__cilkrts_hyperobject_base *key, size_t bytes) {
+    return cilk_aligned_alloc(16, bytes);
+}
+
+void __cilkrts_hyper_dealloc_com(__cilkrts_hyperobject_base *key, void *view) {
+    free(view);
+}
 #endif

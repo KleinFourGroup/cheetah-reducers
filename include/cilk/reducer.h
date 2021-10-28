@@ -1868,8 +1868,8 @@ using stub::reducer;
 
 #define CILK_C_INIT_COM_REDUCER(Type, Reduce, Identity, Destroy)               \
     {                                                                          \
-        {{Reduce, Identity, Destroy, __cilkrts_hyper_alloc,                    \
-          __cilkrts_hyper_dealloc},                                            \
+        {{Reduce, Identity, Destroy, __cilkrts_hyper_alloc_com,                    \
+          __cilkrts_hyper_dealloc_com},                                            \
          0,                                                                    \
          64, /* This is the __view_offset, and it's not relevant here */       \
          sizeof(Type)}                                                         \
