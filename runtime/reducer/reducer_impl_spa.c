@@ -617,6 +617,7 @@ void __cilkrts_hyper_merge_com(__cilkrts_hyperobject_base *key) {
 }
 
 void *__cilkrts_hyper_alloc_com(__cilkrts_hyperobject_base *key, size_t bytes) {
+    // MAK: almost certainly overkill, but no more than one view per cache line
     return cilk_aligned_alloc(16, bytes);
 }
 

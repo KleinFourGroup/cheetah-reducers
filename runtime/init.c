@@ -82,7 +82,9 @@ static void workers_init(global_state *g) {
         atomic_store_explicit(&w->exc, init, memory_order_relaxed);
         w->current_stack_frame = NULL;
         w->reducer_map = NULL;
-        // initialize internal malloc first
+#if COMM_REDUCER && ! HASH_REDUCER
+        w->com_reducer_map = NULL;
+#endif        // initialize internal malloc first
         cilk_internal_malloc_per_worker_init(w);
         cilk_fiber_pool_per_worker_init(w);
     }
