@@ -211,6 +211,16 @@ cilkred_map *install_new_reducer_map(__cilkrts_worker *w) {
     return h;
 }
 
+#if COMM_REDUCER
+com_cilkred_map *install_new_com_reducer_map(__cilkrts_worker *w) {
+    global_state *g = w->g;
+    reducer_id_manager *m = g->id_manager;
+    com_cilkred_map *h = com_cilkred_map_make_map(w, m->spa_cap);
+    w->com_reducer_map = h;
+    return h;
+}
+#endif
+
 /* remove the reducer from the current reducer map.  If the reducer
    exists in maps other than the current one, the behavior is
    undefined. */
@@ -478,15 +488,8 @@ cilkred_map *__cilkrts_internal_merge_two_rmaps(__cilkrts_worker *const ws,
     }
 }
 
-#if COMM_REDUCER
-static com_cilkred_map *install_new_com_reducer_map(__cilkrts_worker *w) {
-    global_state *g = w->g;
-    reducer_id_manager *m = g->id_manager;
-    com_cilkred_map *h = com_cilkred_map_make_map(w, m->spa_cap);
-    w->com_reducer_map = h;
-    return h;
-}
 
+#if COMM_REDUCER
 void __cilkrts_hyper_create_com(__cilkrts_hyperobject_base *key) {
     __cilkrts_worker *w = __cilkrts_get_tls_worker();
     reducer_id_manager *m = NULL;
@@ -513,43 +516,6 @@ void __cilkrts_hyper_create_com(__cilkrts_hyperobject_base *key) {
 
     CILK_ASSERT(w, com_cilkred_map_lookup(h, key) == NULL);
     CILK_ASSERT(w, w->com_reducer_map == h);
-}
-
-void *__cilkrts_hyper_lookup_com(__cilkrts_hyperobject_base *key) {
-    __cilkrts_worker *w = __cilkrts_get_tls_worker();
-    hyper_id_t id = key->__id_num;
-
-    if (__builtin_expect(!w, 0)) {
-        global_state *g = default_cilkrts;
-        w = g->workers[g->exiting_worker];
-        //CILK_ABORT(w, "No worker upon commutative reducer lookup");
-    }
-
-    if (!__builtin_expect(id & HYPER_ID_VALID, HYPER_ID_VALID)) {
-        cilkrts_bug(w, "User error: reference to unregistered hyperobject");
-    }
-    id &= ~HYPER_ID_VALID;
-
-    com_cilkred_map *h = w->com_reducer_map;
-
-    if (__builtin_expect(!h, 0)) {
-        h = install_new_com_reducer_map(w);
-    }
-
-    ViewInfo *vinfo = com_cilkred_map_lookup(h, key);
-    if (vinfo == NULL) {
-        CILK_ASSERT(w, id < h->spa_cap);
-        vinfo = &h->vinfo[id];
-
-        void *val = key->__c_monoid.allocate_fn(key, key->__view_size);
-        key->__c_monoid.identity_fn(key, val);
-        CILK_ASSERT(w, vinfo->key == NULL && vinfo->val == NULL);
-
-        // allocate space for the val and initialize it to identity
-        vinfo->key = key;
-        vinfo->val = val;
-    }
-    return vinfo->val;
 }
 
 static inline void clear_view(ViewInfo *view) {

@@ -66,7 +66,12 @@ ViewInfo * hyperlookup_slowpath(__cilkrts_hyperobject_base *key,
                           __cilkrts_worker *w,
                           cilkred_map *h,
                           hyper_id_t id);
+
+#if COMM_REDUCER
+extern com_cilkred_map *install_new_com_reducer_map(__cilkrts_worker *w);
 #endif
+#endif
+
 #include "reducer/hyperlookup.c"
 #endif
 

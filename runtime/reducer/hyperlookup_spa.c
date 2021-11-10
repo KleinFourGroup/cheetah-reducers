@@ -81,3 +81,68 @@ void *__cilkrts_hyper_lookup(__cilkrts_hyperobject_base *key) {
     }
     return vinfo->val;
 }
+
+
+
+
+#if COMM_REDUCER
+
+#if INLINE_FULL_LOOKUP
+__attribute__((always_inline))
+#endif
+void *__cilkrts_hyper_lookup_com(__cilkrts_hyperobject_base *key) {
+#if INLINE_TLS
+    __cilkrts_worker *w = tls_worker;
+#else
+    __cilkrts_worker *w = __cilkrts_get_tls_worker();
+#endif
+    hyper_id_t id = key->__id_num;
+
+    if (__builtin_expect(!w, 0)) {
+        global_state *g = default_cilkrts;
+        w = g->workers[g->exiting_worker];
+        //CILK_ABORT(w, "No worker upon commutative reducer lookup");
+    }
+
+    if (!__builtin_expect(id & HYPER_ID_VALID, HYPER_ID_VALID)) {
+        inline_cilkrts_bug(w, "User error: reference to unregistered hyperobject");
+    }
+    id &= ~HYPER_ID_VALID;
+
+    com_cilkred_map *h = w->com_reducer_map;
+
+    if (__builtin_expect(!h, 0)) {
+        h = install_new_com_reducer_map(w);
+    }
+
+#if !INLINE_MAP_LOOKUP
+    ViewInfo *vinfo = com_cilkred_map_lookup(h, key);
+#else
+    ViewInfo *vinfo;
+    
+    if (id >= h->spa_cap) {
+        vinfo = NULL; /* TODO: grow map */
+        inline_cilkrts_bug(w, "Error: illegal reducer ID (exceeds SPA cap)");
+    } else {
+        vinfo = h->vinfo + id;
+        if (vinfo->key == NULL && vinfo->val == NULL) {
+            vinfo = NULL;
+        }
+    }
+#endif
+    if (vinfo == NULL) {
+        CILK_ASSERT(w, id < h->spa_cap);
+        vinfo = &h->vinfo[id];
+
+        void *val = key->__c_monoid.allocate_fn(key, key->__view_size);
+        key->__c_monoid.identity_fn(key, val);
+        CILK_ASSERT(w, vinfo->key == NULL && vinfo->val == NULL);
+
+        // allocate space for the val and initialize it to identity
+        vinfo->key = key;
+        vinfo->val = val;
+    }
+    return vinfo->val;
+}
+
+#endif
