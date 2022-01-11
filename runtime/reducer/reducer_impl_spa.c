@@ -20,7 +20,12 @@
 
 #define USE_INTERNAL_MALLOC 1
 
+#if BIG_SPA
+#define REDUCER_LIMIT 8192U
+#else
 #define REDUCER_LIMIT 1024U
+#endif
+
 #define GLOBAL_REDUCER_LIMIT 100U
 
 #if INLINE_ALL_TLS
